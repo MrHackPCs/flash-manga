@@ -1,0 +1,115 @@
+{
+  "buildTime": "2026-08-18T02:10:50.638Z",
+  "builtWith": {
+    "toolchain": "0.8.7",
+    "types": "0.8.7"
+  },
+  "repository": {
+    "name": "Thai Manga Extensions",
+    "description": "Thai Manga extensions for Paperback (Flash-Manga, MangaKimi & NekoPost)!"
+  },
+  "sources": [
+    {
+      "id": "FlashManga",
+      "name": "Flash-Manga",
+      "author": "Paperback Community",
+      "desc": "Extension that pulls manga from snap-manga.com (Thai translation)",
+      "description": "Extension that pulls manga from snap-manga.com (Thai translation)",
+      "website": "https://www.snap-manga.com",
+      "websiteBaseURL": "https://www.snap-manga.com",
+      "version": "1.0.4",
+      "icon": "icon.png",
+      "language": "🇹🇭",
+      "contentRating": "EVERYONE",
+      "tags": [
+        {
+          "text": "Thai",
+          "type": "default"
+        }
+      ],
+      "badges": [
+        {
+          "label": "Thai",
+          "textColor": "#FFFFFF",
+          "backgroundColor": "#4A90E2"
+        }
+      ],
+      "capabilities": 117,
+      "intents": 21,
+      "developers": [
+        {
+          "name": "Paperback Community",
+          "github": "https://github.com/MrHackPCs"
+        }
+      ]
+    },
+    {
+      "id": "MangaKimi",
+      "name": "MangaKimi",
+      "author": "Paperback Community",
+      "desc": "Extension that pulls manga from mangakimi.com (Thai translation)",
+      "description": "Extension that pulls manga from mangakimi.com (Thai translation)",
+      "website": "https://www.mangakimi.com",
+      "websiteBaseURL": "https://www.mangakimi.com",
+      "version": "1.0.0",
+      "icon": "icon.png",
+      "language": "🇹🇭",
+      "contentRating": "EVERYONE",
+      "tags": [
+        {
+          "text": "Thai",
+          "type": "default"
+        }
+      ],
+      "badges": [
+        {
+          "label": "Thai",
+          "textColor": "#FFFFFF",
+          "backgroundColor": "#4A90E2"
+        }
+      ],
+      "capabilities": 117,
+      "intents": 21,
+      "developers": [
+        {
+          "name": "Paperback Community",
+          "github": "https://github.com/MrHackPCs"
+        }
+      ]
+    },
+    {
+      "id": "NekoPost",
+      "name": "NekoPost",
+      "author": "Paperback Community",
+      "desc": "Extension that pulls manga from nekopost.net (Thai translation & community)",
+      "description": "Extension that pulls manga from nekopost.net (Thai translation & community)",
+      "website": "https://www.nekopost.net",
+      "websiteBaseURL": "https://www.nekopost.net",
+      "version": "1.0.0",
+      "icon": "icon.png",
+      "language": "🇹🇭",
+      "contentRating": "EVERYONE",
+      "tags": [
+        {
+          "text": "Thai",
+          "type": "default"
+        }
+      ],
+      "badges": [
+        {
+          "label": "Thai",
+          "textColor": "#FFFFFF",
+          "backgroundColor": "#4A90E2"
+        }
+      ],
+      "capabilities": 117,
+      "intents": 21,
+      "developers": [
+        {
+          "name": "Paperback Community",
+          "github": "https://github.com/MrHackPCs"
+        }
+      ]
+    }
+  ]
+}

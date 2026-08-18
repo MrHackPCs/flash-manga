@@ -1,0 +1,29 @@
+{
+  "name": "paperback-flash-manga",
+  "version": "1.0.0",
+  "description": "Paperback iOS extension for Flash-Manga (Thai translation)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": [
+    "paperback",
+    "paperback-ios",
+    "manga",
+    "thai",
+    "flash-manga"
+  ],
+  "author": "Community",
+  "license": "MIT",
+  "devDependencies": {
+    "@paperback/types": "^0.8.7",
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "cheerio": "^1.0.0-rc.12",
+    "crypto-js": "^4.2.0"
+  }
+}
