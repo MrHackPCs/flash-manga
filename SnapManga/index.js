@@ -735,11 +735,11 @@ var _Sources = (() => {
     }
   });
 
-  // src/FlashManga/FlashManga.ts
-  var FlashManga_exports = {};
-  __export(FlashManga_exports, {
-    FlashManga: () => FlashManga,
-    FlashMangaInfo: () => FlashMangaInfo
+  // src/SnapManga/SnapManga.ts
+  var SnapManga_exports = {};
+  __export(SnapManga_exports, {
+    SnapManga: () => SnapManga,
+    SnapMangaInfo: () => SnapMangaInfo
   });
   var import_types2 = __toESM(require_lib());
 
@@ -14934,8 +14934,8 @@ var _Sources = (() => {
   var { parseHTML: parseHTML2 } = static_exports;
   var { root: root2 } = static_exports;
 
-  // src/FlashManga/FlashMangaHelper.ts
-  var FLASH_MANGA_DOMAIN = "https://www.flash-manga.net";
+  // src/SnapManga/SnapMangaHelper.ts
+  var SNAP_MANGA_DOMAIN = "https://www.snap-manga.com";
   var THAI_MONTHS = {
     "\u0E21\u0E01\u0E23\u0E32\u0E04\u0E21": 0,
     "\u0E01\u0E38\u0E21\u0E20\u0E32\u0E1E\u0E31\u0E19\u0E18\u0E4C": 1,
@@ -14999,30 +14999,30 @@ var _Sources = (() => {
   function cleanUrl(url) {
     if (!url) return "";
     if (url.startsWith("//")) return `https:${url}`;
-    if (url.startsWith("/")) return `${FLASH_MANGA_DOMAIN}${url}`;
+    if (url.startsWith("/")) return `${SNAP_MANGA_DOMAIN}${url}`;
     return url;
   }
 
-  // src/FlashManga/FlashMangaParser.ts
-  var FlashMangaParser = class {
+  // src/SnapManga/SnapMangaParser.ts
+  var SnapMangaParser = class {
     /**
-     * Parses manga tiles from standard list item grids (.bs .bsx, .top10content li, .listupd .bsx)
+     * Parses manga tiles from standard list item grids (Madara / Themesia)
      */
     static parseMangaTiles($2) {
       const tiles = [];
       const seen = /* @__PURE__ */ new Set();
-      const items = $2(".bs .bsx, .top10content li, .listupd .bsx, .page-item-detail");
+      const items = $2(".page-item-detail, .c-tabs-item__content, .badge-pos-1, .row.c-tabs-item__content, .bs .bsx");
       items.each((_, element) => {
-        const linkTag = $2("a", element).first();
+        const linkTag = $2('.post-title a, .item-thumb a, a[href*="/manga/"]', element).first();
         const href = linkTag.attr("href") || "";
-        const title = linkTag.attr("title")?.trim() || $2(".tt", element).text().trim() || $2(".post-title a", element).first().text().trim();
+        const title = $2(".post-title a, .item-thumb a", element).first().text().trim() || linkTag.attr("title")?.trim() || $2(".tt", element).text().trim();
         const idMatch = href.match(/\/manga\/([^/?#]+)/);
         const id = idMatch ? idMatch[1] : "";
         if (!id || !title || seen.has(id) || id === "?genres_collapse=on") return;
         seen.add(id);
         const imgTag = $2("img", element).first();
         const image = imgTag.attr("data-src") || imgTag.attr("src") || imgTag.attr("data-lazy-src") || "";
-        const subtitle = $2(".adds .epxs, .adds .epx, .epx, .epxs, .chapternum", element).first().text().trim() || void 0;
+        const subtitle = $2(".list-chapter .chapter-item .chapter a, .adds .epxs, .adds .epx, .epx, .epxs", element).first().text().trim() || void 0;
         tiles.push(
           App.createMangaTile({
             id,
@@ -15038,38 +15038,33 @@ var _Sources = (() => {
      * Parses the detailed info of a manga series
      */
     static parseMangaDetails($2, mangaId) {
-      const title = $2("h1.entry-title, .info-right h1, .post-title h1").first().text().trim();
-      const imgTag = $2(".info-left .thumb img, .thumb img, .summary_image img").first();
+      const title = $2(".post-title h1, .post-title h3, .profile-manga .post-title h1, h1.entry-title, .info-right h1").first().text().trim();
+      const imgTag = $2(".summary_image img, .thumb img, .info-left .thumb img").first();
       const image = imgTag.attr("data-src") || imgTag.attr("src") || $2('meta[property="og:image"]').attr("content") || "";
-      const description = $2('.entry-content-single[itemprop="description"] p, .entry-content-single, .desc, .entry-content').first().text().trim();
+      const description = $2(".description-summary .summary__content, .manga-excerpt, .entry-content-single, .desc, .entry-content").first().text().trim();
       let status = "Ongoing";
-      $2(".tsinfo .imptdt").each((_, el) => {
-        const text3 = $2(el).text().toLowerCase();
-        if (text3.includes("\u0E2A\u0E16\u0E32\u0E19\u0E30") || text3.includes("status")) {
-          if (text3.includes("completed") || text3.includes("\u0E08\u0E1A\u0E41\u0E25\u0E49\u0E27")) {
-            status = "Completed";
-          }
-        }
-      });
-      let author = "";
-      $2(".tsinfo .imptdt").each((_, el) => {
-        const text3 = $2(el).text();
-        if (text3.includes("\u0E42\u0E1E\u0E2A\u0E15\u0E4C\u0E42\u0E14\u0E22") || text3.includes("author") || text3.includes("\u0E1C\u0E39\u0E49\u0E41\u0E15\u0E48\u0E07")) {
-          author = $2("i", el).text().trim() || $2(el).text().replace(/โพสต์โดย|author|ผู้แต่ง/gi, "").trim();
-        }
-      });
+      const statusText = $2(".post-status .summary-content, .tsinfo .imptdt").text().toLowerCase();
+      if (statusText.includes("completed") || statusText.includes("\u0E08\u0E1A\u0E41\u0E25\u0E49\u0E27")) {
+        status = "Completed";
+      }
+      let author = $2(".author-content a, .artist-content a").map((_, el) => $2(el).text().trim()).get().join(", ");
       if (!author) {
-        author = $2(".author-content a, .artist-content a").map((_, el) => $2(el).text().trim()).get().join(", ");
+        $2(".tsinfo .imptdt").each((_, el) => {
+          const text3 = $2(el).text();
+          if (text3.includes("\u0E42\u0E1E\u0E2A\u0E15\u0E4C\u0E42\u0E14\u0E22") || text3.includes("author") || text3.includes("\u0E1C\u0E39\u0E49\u0E41\u0E15\u0E48\u0E07")) {
+            author = $2("i", el).text().trim() || $2(el).text().replace(/โพสต์โดย|author|ผู้แต่ง/gi, "").trim();
+          }
+        });
       }
       const tags = [];
-      $2(".mgen a, .seriestugenre a, .genres-content a").each((_, el) => {
+      $2(".genres-content a, .mgen a, .seriestugenre a").each((_, el) => {
         const tagTitle = $2(el).text().trim();
         const tagId = $2(el).attr("href")?.split("/").filter(Boolean).pop() || tagTitle;
         if (tagTitle) {
           tags.push(App.createTag({ id: tagId, label: tagTitle }));
         }
       });
-      const ratingText = $2(".rating-prc .num, .numscore, .post-total-rating .score").first().text().trim();
+      const ratingText = $2(".post-total-rating .score, .rating-prc .num, .numscore").first().text().trim();
       const rating = ratingText ? parseFloat(ratingText) : void 0;
       const tagSections = [
         App.createTagSection({
@@ -15098,7 +15093,7 @@ var _Sources = (() => {
     static parseChapterList($2, mangaId) {
       const chapters = [];
       const seen = /* @__PURE__ */ new Set();
-      $2("#chapterlist ul li, .bxcl ul li, .eplister ul li").each((_, element) => {
+      $2(".listing-chapters_wrap .wp-manga-chapter, ul.main.version-chap li.wp-manga-chapter, #chapterlist ul li, .bxcl ul li, .eplister ul li").each((_, element) => {
         const linkTag = $2("a", element).first();
         const href = linkTag.attr("href") || "";
         const urlParts = href.split("/").filter(Boolean);
@@ -15106,10 +15101,10 @@ var _Sources = (() => {
         const chapterId = decodeURIComponent(rawSlug);
         if (!chapterId || seen.has(chapterId)) return;
         seen.add(chapterId);
-        const name = $2(".chapternum", element).text().trim() || linkTag.text().trim();
+        const name = linkTag.text().trim() || $2(".chapternum", element).text().trim();
         const dataNum = $2(element).attr("data-num");
         const chapNum = dataNum ? parseFloat(dataNum) : parseChapterNumber(name);
-        const dateStr = $2(".chapterdate", element).text().trim() || $2(".chapter-release-date", element).text().trim();
+        const dateStr = $2(".chapter-release-date", element).text().trim() || $2(".chapterdate", element).text().trim();
         const time = parseThaiDate(dateStr);
         chapters.push(
           App.createChapter({
@@ -15128,37 +15123,37 @@ var _Sources = (() => {
      */
     static parseChapterDetails(html3, mangaId, chapterId, $2) {
       const pages = [];
-      const match = html3.match(/ts_reader\.run\(([\s\S]+?)\);/);
-      if (match && match[1]) {
-        try {
-          const data2 = JSON.parse(match[1]);
-          if (data2?.sources && Array.isArray(data2.sources)) {
-            for (const source of data2.sources) {
-              if (source?.images && Array.isArray(source.images)) {
-                for (const img of source.images) {
-                  if (img && typeof img === "string") {
-                    pages.push(cleanUrl(img.trim()));
+      $2(".reading-content img, .page-break img").each((_, element) => {
+        const src = $2(element).attr("data-src") || $2(element).attr("src") || $2(element).attr("data-lazy-src");
+        if (src && !src.includes("banner") && !src.includes("ads")) {
+          pages.push(cleanUrl(src.trim()));
+        }
+      });
+      if (pages.length === 0) {
+        const match = html3.match(/ts_reader\.run\(([\s\S]+?)\);/);
+        if (match && match[1]) {
+          try {
+            const data2 = JSON.parse(match[1]);
+            if (data2?.sources && Array.isArray(data2.sources)) {
+              for (const source of data2.sources) {
+                if (source?.images && Array.isArray(source.images)) {
+                  for (const img of source.images) {
+                    if (img && typeof img === "string") {
+                      pages.push(cleanUrl(img.trim()));
+                    }
                   }
+                  if (pages.length > 0) break;
                 }
-                if (pages.length > 0) break;
               }
             }
+          } catch (err) {
           }
-        } catch (err) {
         }
       }
       if (pages.length === 0) {
         $2("#readerarea img").each((_, element) => {
           const src = $2(element).attr("src") || $2(element).attr("data-src") || $2(element).attr("data-lazy-src");
           if (src && !src.includes("readerarea.svg") && !src.includes("banner")) {
-            pages.push(cleanUrl(src.trim()));
-          }
-        });
-      }
-      if (pages.length === 0) {
-        $2(".reading-content img, .page-break img").each((_, element) => {
-          const src = $2(element).attr("data-src") || $2(element).attr("src") || $2(element).attr("data-lazy-src");
-          if (src && !src.includes("banner") && !src.includes("ads")) {
             pages.push(cleanUrl(src.trim()));
           }
         });
@@ -15173,26 +15168,26 @@ var _Sources = (() => {
      * Checks if there is a next page in pagination
      */
     static hasNextPage($2) {
-      return $2(".pagination .next, .hpage .r, a.next, .next.page-numbers, .nav-previous").length > 0;
+      return $2(".nav-previous, .pagination .next, a.next, .wp-pagenavi .nextpostslink, .wp-pagenavi a.next, .hpage .r").length > 0;
     }
   };
 
-  // src/FlashManga/FlashManga.ts
+  // src/SnapManga/SnapManga.ts
   if (typeof App !== "undefined" && !App.createCheerioAPI) {
     App.createCheerioAPI = (html3) => load(html3);
   }
-  var FlashMangaInfo = {
-    version: "1.0.5",
-    name: "Flash-Manga",
+  var SnapMangaInfo = {
+    version: "1.0.0",
+    name: "Snap-Manga",
     icon: "icon.png",
     author: "Paperback Community",
     authorWebsite: "https://github.com",
-    description: "Extension that scrapes manga from flash-manga.net (Thai translation)",
+    description: "Extension that scrapes manga from snap-manga.com (Thai translation)",
     contentRating: import_types2.ContentRating.EVERYONE,
-    websiteBaseURL: FLASH_MANGA_DOMAIN,
+    websiteBaseURL: SNAP_MANGA_DOMAIN,
     sourceIntents: import_types2.SourceIntents.MANGA_CHAPTERS | import_types2.SourceIntents.HOMEPAGE_SECTIONS | import_types2.SourceIntents.MANGA_SEARCH | import_types2.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
   };
-  var FlashManga = class extends import_types2.Source {
+  var SnapManga = class extends import_types2.Source {
     constructor() {
       super(...arguments);
       this.requestManager = App.createRequestManager({
@@ -15201,17 +15196,17 @@ var _Sources = (() => {
       });
     }
     getMangaShareUrl(mangaId) {
-      return `${FLASH_MANGA_DOMAIN}/manga/${mangaId}/`;
+      return `${SNAP_MANGA_DOMAIN}/manga/${mangaId}/`;
     }
     /**
      * Cloudflare Bypass Request
      */
     getCloudflareBypassRequest() {
       return App.createRequest({
-        url: FLASH_MANGA_DOMAIN,
+        url: SNAP_MANGA_DOMAIN,
         method: "GET",
         headers: {
-          referer: `${FLASH_MANGA_DOMAIN}/`,
+          referer: `${SNAP_MANGA_DOMAIN}/`,
           "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         }
       });
@@ -15224,24 +15219,38 @@ var _Sources = (() => {
      */
     async getMangaDetails(mangaId) {
       const request = App.createRequest({
-        url: `${FLASH_MANGA_DOMAIN}/manga/${mangaId}/`,
+        url: `${SNAP_MANGA_DOMAIN}/manga/${mangaId}/`,
         method: "GET"
       });
       const response = await this.requestManager.schedule(request, 1);
       const $2 = load(response.data);
-      return FlashMangaParser.parseMangaDetails($2, mangaId);
+      return SnapMangaParser.parseMangaDetails($2, mangaId);
     }
     /**
      * Fetches all chapters available for a manga title
      */
     async getChapters(mangaId) {
       const request = App.createRequest({
-        url: `${FLASH_MANGA_DOMAIN}/manga/${mangaId}/`,
+        url: `${SNAP_MANGA_DOMAIN}/manga/${mangaId}/`,
         method: "GET"
       });
       const response = await this.requestManager.schedule(request, 1);
-      const $2 = load(response.data);
-      return FlashMangaParser.parseChapterList($2, mangaId);
+      let $2 = load(response.data);
+      let chapters = SnapMangaParser.parseChapterList($2, mangaId);
+      if (chapters.length === 0) {
+        try {
+          const ajaxRequest = App.createRequest({
+            url: `${SNAP_MANGA_DOMAIN}/manga/${mangaId}/ajax/chapters/`,
+            method: "POST"
+          });
+          const ajaxResponse = await this.requestManager.schedule(ajaxRequest, 1);
+          $2 = load(ajaxResponse.data);
+          chapters = SnapMangaParser.parseChapterList($2, mangaId);
+        } catch (err) {
+          console.log("Error fetching ajax chapters:", err);
+        }
+      }
+      return chapters;
     }
     /**
      * Fetches page images for a chapter
@@ -15249,7 +15258,7 @@ var _Sources = (() => {
     async getChapterDetails(mangaId, chapterId) {
       const encodedChapter = encodeURIComponent(chapterId);
       let request = App.createRequest({
-        url: `${FLASH_MANGA_DOMAIN}/${encodedChapter}/`,
+        url: `${SNAP_MANGA_DOMAIN}/manga/${mangaId}/${encodedChapter}/`,
         method: "GET"
       });
       let response;
@@ -15257,14 +15266,14 @@ var _Sources = (() => {
         response = await this.requestManager.schedule(request, 1);
       } catch (err) {
         request = App.createRequest({
-          url: `${FLASH_MANGA_DOMAIN}/manga/${mangaId}/${encodedChapter}/`,
+          url: `${SNAP_MANGA_DOMAIN}/${encodedChapter}/`,
           method: "GET"
         });
         response = await this.requestManager.schedule(request, 1);
       }
       const html3 = response.data;
       const $2 = load(html3);
-      return FlashMangaParser.parseChapterDetails(html3, mangaId, chapterId, $2);
+      return SnapMangaParser.parseChapterDetails(html3, mangaId, chapterId, $2);
     }
     /**
      * Generates sections shown on the Paperback home discovery screen
@@ -15272,7 +15281,7 @@ var _Sources = (() => {
     async getHomePageSections(sectionCallback) {
       const popularSection = App.createHomeSection({
         id: "popular",
-        title: "\u0E2D\u0E31\u0E19\u0E14\u0E31\u0E1A\u0E22\u0E2D\u0E14\u0E2E\u0E34\u0E15 (Top Popular)",
+        title: "\u0E2D\u0E31\u0E19\u0E14\u0E31\u0E1A\u0E22\u0E2D\u0E14\u0E2E\u0E34\u0E15 (Most Popular)",
         containsMoreItems: true,
         type: import_types2.HomeSectionType.singleRowNormal
       });
@@ -15293,42 +15302,43 @@ var _Sources = (() => {
       sectionCallback(allMangaSection);
       try {
         try {
-          const hpReq = App.createRequest({
-            url: FLASH_MANGA_DOMAIN,
+          const popReq = App.createRequest({
+            url: `${SNAP_MANGA_DOMAIN}/manga/?m_orderby=views`,
             method: "GET"
           });
-          const hpRes = await this.requestManager.schedule(hpReq, 1);
-          const hp$ = load(hpRes.data);
-          let popTiles = FlashMangaParser.parseMangaTiles(hp$(".top10content li, .top10content .bsx"));
-          if (popTiles.length === 0) {
-            const popReq = App.createRequest({
-              url: `${FLASH_MANGA_DOMAIN}/manga/?order=popular`,
-              method: "GET"
-            });
-            const popRes = await this.requestManager.schedule(popReq, 1);
-            const pop$ = load(popRes.data);
-            popTiles = FlashMangaParser.parseMangaTiles(pop$);
-          }
+          const popRes = await this.requestManager.schedule(popReq, 1);
+          const pop$ = load(popRes.data);
+          const popTiles = SnapMangaParser.parseMangaTiles(pop$);
           if (popTiles.length > 0) {
             popularSection.items = popTiles;
             sectionCallback(popularSection);
           }
-          const latestTiles = FlashMangaParser.parseMangaTiles(hp$(".postbody .bixbox:not(.hothome) .bsx, .bs .bsx"));
+        } catch (e) {
+          console.log("Error parsing popular section:", e);
+        }
+        try {
+          const hpReq = App.createRequest({
+            url: SNAP_MANGA_DOMAIN,
+            method: "GET"
+          });
+          const hpRes = await this.requestManager.schedule(hpReq, 1);
+          const hp$ = load(hpRes.data);
+          const latestTiles = SnapMangaParser.parseMangaTiles(hp$);
           if (latestTiles.length > 0) {
             latestSection.items = latestTiles;
             sectionCallback(latestSection);
           }
         } catch (e) {
-          console.log("Error parsing homepage sections:", e);
+          console.log("Error parsing latest section:", e);
         }
         try {
           const allRequest = App.createRequest({
-            url: `${FLASH_MANGA_DOMAIN}/manga/?order=latest`,
+            url: `${SNAP_MANGA_DOMAIN}/manga/?m_orderby=latest`,
             method: "GET"
           });
           const allResponse = await this.requestManager.schedule(allRequest, 1);
           const all$ = load(allResponse.data);
-          const allTiles = FlashMangaParser.parseMangaTiles(all$);
+          const allTiles = SnapMangaParser.parseMangaTiles(all$);
           if (allTiles.length > 0) {
             allMangaSection.items = allTiles;
             sectionCallback(allMangaSection);
@@ -15348,14 +15358,14 @@ var _Sources = (() => {
       let url = "";
       switch (homepageSectionId) {
         case "popular":
-          url = page > 1 ? `${FLASH_MANGA_DOMAIN}/manga/?page=${page}&order=popular` : `${FLASH_MANGA_DOMAIN}/manga/?order=popular`;
+          url = page > 1 ? `${SNAP_MANGA_DOMAIN}/manga/page/${page}/?m_orderby=views` : `${SNAP_MANGA_DOMAIN}/manga/?m_orderby=views`;
           break;
         case "latest":
-          url = page > 1 ? `${FLASH_MANGA_DOMAIN}/manga/?page=${page}&order=update` : `${FLASH_MANGA_DOMAIN}/manga/?order=update`;
+          url = page > 1 ? `${SNAP_MANGA_DOMAIN}/manga/page/${page}/?m_orderby=latest` : `${SNAP_MANGA_DOMAIN}/manga/?m_orderby=latest`;
           break;
         case "all":
         default:
-          url = page > 1 ? `${FLASH_MANGA_DOMAIN}/manga/?page=${page}&order=latest` : `${FLASH_MANGA_DOMAIN}/manga/?order=latest`;
+          url = page > 1 ? `${SNAP_MANGA_DOMAIN}/manga/page/${page}/?m_orderby=alphabet` : `${SNAP_MANGA_DOMAIN}/manga/?m_orderby=alphabet`;
           break;
       }
       const request = App.createRequest({
@@ -15364,10 +15374,10 @@ var _Sources = (() => {
       });
       const response = await this.requestManager.schedule(request, 1);
       const $2 = load(response.data);
-      const items = FlashMangaParser.parseMangaTiles($2);
+      const items = SnapMangaParser.parseMangaTiles($2);
       return App.createPagedResults({
         results: items,
-        metadata: FlashMangaParser.hasNextPage($2) ? { page: page + 1 } : void 0
+        metadata: SnapMangaParser.hasNextPage($2) ? { page: page + 1 } : void 0
       });
     }
     /**
@@ -15377,9 +15387,9 @@ var _Sources = (() => {
       const page = metadata?.page ?? 1;
       let url = "";
       if (query.title) {
-        url = page > 1 ? `${FLASH_MANGA_DOMAIN}/page/${page}/?s=${encodeURIComponent(query.title)}` : `${FLASH_MANGA_DOMAIN}/?s=${encodeURIComponent(query.title)}`;
+        url = page > 1 ? `${SNAP_MANGA_DOMAIN}/page/${page}/?s=${encodeURIComponent(query.title)}&post_type=wp-manga` : `${SNAP_MANGA_DOMAIN}/?s=${encodeURIComponent(query.title)}&post_type=wp-manga`;
       } else {
-        url = page > 1 ? `${FLASH_MANGA_DOMAIN}/manga/?page=${page}&order=latest` : `${FLASH_MANGA_DOMAIN}/manga/?order=latest`;
+        url = page > 1 ? `${SNAP_MANGA_DOMAIN}/manga/page/${page}/?m_orderby=latest` : `${SNAP_MANGA_DOMAIN}/manga/?m_orderby=latest`;
       }
       const request = App.createRequest({
         url,
@@ -15387,25 +15397,25 @@ var _Sources = (() => {
       });
       const response = await this.requestManager.schedule(request, 1);
       const $2 = load(response.data);
-      const items = FlashMangaParser.parseMangaTiles($2);
+      const items = SnapMangaParser.parseMangaTiles($2);
       return App.createPagedResults({
         results: items,
-        metadata: FlashMangaParser.hasNextPage($2) ? { page: page + 1 } : void 0
+        metadata: SnapMangaParser.hasNextPage($2) ? { page: page + 1 } : void 0
       });
     }
   };
-  return __toCommonJS(FlashManga_exports);
+  return __toCommonJS(SnapManga_exports);
 })();
 
 this.Sources = _Sources;
 if (typeof exports === 'object' && typeof module !== 'undefined') {
     module.exports.Sources = this.Sources;
-    module.exports.FlashManga = _Sources.FlashManga;
-    module.exports.FlashMangaInfo = _Sources.FlashMangaInfo;
+    module.exports.SnapManga = _Sources.SnapManga;
+    module.exports.SnapMangaInfo = _Sources.SnapMangaInfo;
 }
 if (typeof globalThis !== 'undefined') {
     globalThis.Sources = _Sources;
-    globalThis.FlashManga = _Sources.FlashManga;
-    globalThis.FlashMangaInfo = _Sources.FlashMangaInfo;
+    globalThis.SnapManga = _Sources.SnapManga;
+    globalThis.SnapMangaInfo = _Sources.SnapMangaInfo;
 }
 

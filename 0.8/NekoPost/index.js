@@ -7295,6 +7295,7 @@ var _Sources = (() => {
   // src/NekoPost/NekoPostHelper.ts
   var import_crypto_js = __toESM(require_crypto_js());
   var NEKOPOST_DOMAIN = "https://www.nekopost.net";
+  var NEKOPOST_MANGA_URL = "https://www.nekopost.net/manga";
   var NEKOPOST_API_DOMAIN = "https://www.nekopost.net/api";
   var NEKOPOST_AES_KEY = "AeyTest";
   function getCdnBase(projectId) {
@@ -7475,14 +7476,14 @@ var _Sources = (() => {
 
   // src/NekoPost/NekoPost.ts
   var NekoPostInfo = {
-    version: "1.0.0",
+    version: "1.0.2",
     name: "NekoPost",
     icon: "icon.png",
     author: "Paperback Community",
     authorWebsite: "https://github.com",
-    description: "Extension that pulls manga from nekopost.net (Thai translation & community)",
+    description: "Extension that pulls manga from nekopost.net/manga (Thai translation & community)",
     contentRating: import_types.ContentRating.EVERYONE,
-    websiteBaseURL: NEKOPOST_DOMAIN,
+    websiteBaseURL: NEKOPOST_MANGA_URL,
     sourceIntents: import_types.SourceIntents.MANGA_CHAPTERS | import_types.SourceIntents.HOMEPAGE_SECTIONS | import_types.SourceIntents.MANGA_SEARCH | import_types.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
   };
   var NekoPost = class extends import_types.Source {
@@ -7501,10 +7502,10 @@ var _Sources = (() => {
      */
     getCloudflareBypassRequest() {
       return App.createRequest({
-        url: NEKOPOST_DOMAIN,
+        url: NEKOPOST_MANGA_URL,
         method: "GET",
         headers: {
-          referer: `${NEKOPOST_DOMAIN}/`,
+          referer: `${NEKOPOST_MANGA_URL}/`,
           "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         }
       });
@@ -7579,8 +7580,15 @@ var _Sources = (() => {
         containsMoreItems: true,
         type: import_types.HomeSectionType.singleRowNormal
       });
+      const allMangaSection = App.createHomeSection({
+        id: "all",
+        title: "\u0E21\u0E31\u0E07\u0E07\u0E30\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14 (All Manga)",
+        containsMoreItems: true,
+        type: import_types.HomeSectionType.singleRowNormal
+      });
       sectionCallback(popularSection);
       sectionCallback(latestSection);
+      sectionCallback(allMangaSection);
       try {
         const popularRequest = App.createRequest({
           url: `${NEKOPOST_API_DOMAIN}/project/list/popular`,
@@ -7612,7 +7620,7 @@ var _Sources = (() => {
           },
           data: JSON.stringify({
             type: "m",
-            paging: { pageNo: 1, pageSize: 20 }
+            paging: { pageNo: 1, pageSize: 50 }
           })
         });
         const latestResponse = await this.requestManager.schedule(latestRequest, 1);
@@ -7625,6 +7633,32 @@ var _Sources = (() => {
       } catch (e) {
         console.log("Error loading latest sections:", e);
       }
+      try {
+        const allRequest = App.createRequest({
+          url: `${NEKOPOST_API_DOMAIN}/project/search`,
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          data: JSON.stringify({
+            keyword: "",
+            genre: [],
+            status: 0,
+            specialType: [],
+            orderBy: "latest",
+            paging: { pageNo: 1, pageSize: 30 }
+          })
+        });
+        const allResponse = await this.requestManager.schedule(allRequest, 1);
+        const allData = typeof allResponse.data === "string" ? JSON.parse(allResponse.data) : allResponse.data;
+        const allTiles = NekoPostParser.parseProjectTiles(allData.listProject);
+        if (allTiles.length > 0) {
+          allMangaSection.items = allTiles;
+          sectionCallback(allMangaSection);
+        }
+      } catch (e) {
+        console.log("Error loading all manga sections:", e);
+      }
     }
     /**
      * Handles clicking "View More" on any home section
@@ -7632,15 +7666,63 @@ var _Sources = (() => {
     async getViewMoreItems(homepageSectionId, metadata) {
       const page = metadata?.page ?? 1;
       if (homepageSectionId === "popular") {
+        if (page === 1) {
+          const request = App.createRequest({
+            url: `${NEKOPOST_API_DOMAIN}/project/list/popular`,
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            data: JSON.stringify({
+              type: "m",
+              paging: { pageNo: 1, pageSize: 20 }
+            })
+          });
+          const response = await this.requestManager.schedule(request, 1);
+          const data = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+          const items = NekoPostParser.parseProjectTiles(data.listProject);
+          return App.createPagedResults({
+            results: items,
+            metadata: { page: 2 }
+          });
+        } else {
+          const request = App.createRequest({
+            url: `${NEKOPOST_API_DOMAIN}/project/search`,
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            data: JSON.stringify({
+              keyword: "",
+              genre: [],
+              status: 0,
+              specialType: [],
+              orderBy: "latest",
+              paging: { pageNo: page, pageSize: 30 }
+            })
+          });
+          const response = await this.requestManager.schedule(request, 1);
+          const data = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
+          const items = NekoPostParser.parseProjectTiles(data.listProject);
+          return App.createPagedResults({
+            results: items,
+            metadata: data?.listProject?.length >= 30 ? { page: page + 1 } : void 0
+          });
+        }
+      } else if (homepageSectionId === "all") {
         const request = App.createRequest({
-          url: `${NEKOPOST_API_DOMAIN}/project/list/popular`,
+          url: `${NEKOPOST_API_DOMAIN}/project/search`,
           method: "POST",
           headers: {
             "content-type": "application/json"
           },
           data: JSON.stringify({
-            type: "m",
-            paging: { pageNo: page, pageSize: 20 }
+            keyword: "",
+            genre: [],
+            status: 0,
+            specialType: [],
+            orderBy: "latest",
+            paging: { pageNo: page, pageSize: 30 }
           })
         });
         const response = await this.requestManager.schedule(request, 1);
@@ -7648,7 +7730,7 @@ var _Sources = (() => {
         const items = NekoPostParser.parseProjectTiles(data.listProject);
         return App.createPagedResults({
           results: items,
-          metadata: items.length >= 20 ? { page: page + 1 } : void 0
+          metadata: data?.listProject?.length >= 30 ? { page: page + 1 } : void 0
         });
       } else {
         const request = App.createRequest({
@@ -7659,7 +7741,7 @@ var _Sources = (() => {
           },
           data: JSON.stringify({
             type: "m",
-            paging: { pageNo: page, pageSize: 20 }
+            paging: { pageNo: page, pageSize: 50 }
           })
         });
         const response = await this.requestManager.schedule(request, 1);
@@ -7667,7 +7749,7 @@ var _Sources = (() => {
         const items = NekoPostParser.parseLatestTiles(data.listChapter);
         return App.createPagedResults({
           results: items,
-          metadata: items.length >= 20 ? { page: page + 1 } : void 0
+          metadata: data?.listChapter?.length >= 20 ? { page: page + 1 } : void 0
         });
       }
     }
@@ -7688,7 +7770,7 @@ var _Sources = (() => {
           status: 0,
           specialType: [],
           orderBy: "latest",
-          paging: { pageNo: page, pageSize: 20 }
+          paging: { pageNo: page, pageSize: 30 }
         })
       });
       const response = await this.requestManager.schedule(request, 1);
@@ -7696,7 +7778,7 @@ var _Sources = (() => {
       const items = NekoPostParser.parseProjectTiles(data.listProject);
       return App.createPagedResults({
         results: items,
-        metadata: items.length >= 20 ? { page: page + 1 } : void 0
+        metadata: data?.listProject?.length >= 30 ? { page: page + 1 } : void 0
       });
     }
   };
