@@ -1,6 +1,7 @@
 import CryptoJS from 'crypto-js'
 
 export const NEKOPOST_DOMAIN = 'https://www.nekopost.net'
+export const NEKOPOST_MANGA_URL = 'https://www.nekopost.net/manga'
 export const NEKOPOST_API_DOMAIN = 'https://www.nekopost.net/api'
 export const NEKOPOST_AES_KEY = 'AeyTest'
 

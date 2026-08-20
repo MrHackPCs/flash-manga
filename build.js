@@ -4,14 +4,48 @@ const esbuild = require('esbuild')
 
 const SOURCES = [
     {
-        id: 'FlashManga',
-        name: 'Flash-Manga',
+        id: 'SnapManga',
+        name: 'Snap-Manga',
         author: 'Paperback Community',
         desc: 'Extension that pulls manga from snap-manga.com (Thai translation)',
         description: 'Extension that pulls manga from snap-manga.com (Thai translation)',
         website: 'https://www.snap-manga.com',
         websiteBaseURL: 'https://www.snap-manga.com',
-        version: '1.0.4',
+        version: '1.0.0',
+        icon: 'icon.png',
+        language: '🇹🇭',
+        contentRating: 'EVERYONE',
+        tags: [
+            {
+                text: 'Thai',
+                type: 'default'
+            }
+        ],
+        badges: [
+            {
+                label: 'Thai',
+                textColor: '#FFFFFF',
+                backgroundColor: '#4A90E2'
+            }
+        ],
+        capabilities: 117,
+        intents: 21,
+        developers: [
+            {
+                name: 'Paperback Community',
+                github: 'https://github.com/MrHackPCs'
+            }
+        ]
+    },
+    {
+        id: 'FlashManga',
+        name: 'Flash-Manga',
+        author: 'Paperback Community',
+        desc: 'Extension that pulls manga from flash-manga.net (Thai translation)',
+        description: 'Extension that pulls manga from flash-manga.net (Thai translation)',
+        website: 'https://www.flash-manga.net',
+        websiteBaseURL: 'https://www.flash-manga.net',
+        version: '1.0.5',
         icon: 'icon.png',
         language: '🇹🇭',
         contentRating: 'EVERYONE',
@@ -75,11 +109,11 @@ const SOURCES = [
         id: 'NekoPost',
         name: 'NekoPost',
         author: 'Paperback Community',
-        desc: 'Extension that pulls manga from nekopost.net (Thai translation & community)',
-        description: 'Extension that pulls manga from nekopost.net (Thai translation & community)',
-        website: 'https://www.nekopost.net',
-        websiteBaseURL: 'https://www.nekopost.net',
-        version: '1.0.0',
+        desc: 'Extension that pulls manga from nekopost.net/manga (Thai translation & community)',
+        description: 'Extension that pulls manga from nekopost.net/manga (Thai translation & community)',
+        website: 'https://www.nekopost.net/manga',
+        websiteBaseURL: 'https://www.nekopost.net/manga',
+        version: '1.0.2',
         icon: 'icon.png',
         language: '🇹🇭',
         contentRating: 'EVERYONE',
@@ -108,7 +142,7 @@ const SOURCES = [
 ]
 
 async function build() {
-    console.log('🚀 Building 3-Source Paperback Repository (Flash-Manga, MangaKimi, NekoPost)...')
+    console.log('🚀 Building 4-Source Paperback Repository (Snap-Manga, Flash-Manga, MangaKimi, NekoPost)...')
 
     const distDir = path.join(__dirname, 'public')
     const v9Dir = path.join(distDir, '0.9')
@@ -123,7 +157,7 @@ async function build() {
     fs.mkdirSync(v8Dir, { recursive: true })
 
     // Copy repo icon
-    const repoIcon = path.join(__dirname, 'src', 'FlashManga', 'icon.png')
+    const repoIcon = path.join(__dirname, 'src', 'SnapManga', 'icon.png')
     if (fs.existsSync(repoIcon)) {
         fs.copyFileSync(repoIcon, path.join(distDir, 'icon.png'))
         fs.copyFileSync(repoIcon, path.join(v9Dir, 'icon.png'))
@@ -194,7 +228,7 @@ if (typeof globalThis !== 'undefined') {
         },
         repository: {
             name: "Thai Manga Extensions",
-            description: "Thai Manga extensions for Paperback (Flash-Manga, MangaKimi & NekoPost)!"
+            description: "Thai Manga extensions for Paperback (Snap-Manga, Flash-Manga, MangaKimi & NekoPost)!"
         },
         sources: SOURCES
     }
@@ -203,7 +237,7 @@ if (typeof globalThis !== 'undefined') {
     fs.writeFileSync(path.join(distDir, 'versioning.json'), versioningJson)
     fs.writeFileSync(path.join(v9Dir, 'versioning.json'), versioningJson)
     fs.writeFileSync(path.join(v8Dir, 'versioning.json'), versioningJson)
-    console.log('\n✔ Generated Universal versioning.json with all 3 sources')
+    console.log('\n✔ Generated Universal versioning.json with all 4 sources')
 
     // 4. Fetch the official NetSky web page and adapt it
     console.log('Fetching NetSky 0.9 web app template...')
@@ -218,7 +252,7 @@ if (typeof globalThis !== 'undefined') {
     if (templateHtml) {
         templateHtml = templateHtml
             .replace(/Netsky's Extensions \(0\.9\)/g, "Thai Manga Extensions")
-            .replace(/Netsky's extensions for 0\.9!/g, "Thai Manga extensions for Paperback (Flash-Manga, MangaKimi & NekoPost)!")
+            .replace(/Netsky's extensions for 0\.9!/g, "Thai Manga extensions for Paperback (Snap-Manga, Flash-Manga, MangaKimi & NekoPost)!")
             .replace(/https:\/\/thenetsky\.github\.io\/netskys-extensions\/0\.9/g, "https://mrhackpcs.github.io/flash-manga")
 
         fs.writeFileSync(path.join(distDir, 'index.html'), templateHtml)
@@ -227,7 +261,7 @@ if (typeof globalThis !== 'undefined') {
         console.log('✔ Generated exact NetSky web app interface')
     }
 
-    console.log('\n🎉 3-Source build complete!')
+    console.log('\n🎉 4-Source build complete!')
 }
 
 build().catch(err => {

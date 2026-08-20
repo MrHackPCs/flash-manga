@@ -15,19 +15,20 @@ import {
 } from '@paperback/types'
 import {
     NEKOPOST_API_DOMAIN,
-    NEKOPOST_DOMAIN
+    NEKOPOST_DOMAIN,
+    NEKOPOST_MANGA_URL
 } from './NekoPostHelper'
 import { NekoPostParser } from './NekoPostParser'
 
 export const NekoPostInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.2',
     name: 'NekoPost',
     icon: 'icon.png',
     author: 'Paperback Community',
     authorWebsite: 'https://github.com',
-    description: 'Extension that pulls manga from nekopost.net (Thai translation & community)',
+    description: 'Extension that pulls manga from nekopost.net/manga (Thai translation & community)',
     contentRating: ContentRating.EVERYONE,
-    websiteBaseURL: NEKOPOST_DOMAIN,
+    websiteBaseURL: NEKOPOST_MANGA_URL,
     sourceIntents: SourceIntents.MANGA_CHAPTERS | SourceIntents.HOMEPAGE_SECTIONS | SourceIntents.MANGA_SEARCH | SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
 }
 
@@ -46,10 +47,10 @@ export class NekoPost extends Source {
      */
     getCloudflareBypassRequest(): Request {
         return App.createRequest({
-            url: NEKOPOST_DOMAIN,
+            url: NEKOPOST_MANGA_URL,
             method: 'GET',
             headers: {
-                referer: `${NEKOPOST_DOMAIN}/`,
+                referer: `${NEKOPOST_MANGA_URL}/`,
                 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
             }
         })
@@ -139,8 +140,17 @@ export class NekoPost extends Source {
             type: HomeSectionType.singleRowNormal
         })
 
+        // 3. All Manga Section
+        const allMangaSection = App.createHomeSection({
+            id: 'all',
+            title: 'มังงะทั้งหมด (All Manga)',
+            containsMoreItems: true,
+            type: HomeSectionType.singleRowNormal
+        })
+
         sectionCallback(popularSection)
         sectionCallback(latestSection)
+        sectionCallback(allMangaSection)
 
         // 1. Fetch Popular Projects
         try {
@@ -177,7 +187,7 @@ export class NekoPost extends Source {
                 },
                 data: JSON.stringify({
                     type: 'm',
-                    paging: { pageNo: 1, pageSize: 20 }
+                    paging: { pageNo: 1, pageSize: 50 }
                 })
             })
 
@@ -191,6 +201,35 @@ export class NekoPost extends Source {
         } catch (e) {
             console.log('Error loading latest sections:', e)
         }
+
+        // 3. Fetch All Manga
+        try {
+            const allRequest: Request = App.createRequest({
+                url: `${NEKOPOST_API_DOMAIN}/project/search`,
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                data: JSON.stringify({
+                    keyword: '',
+                    genre: [],
+                    status: 0,
+                    specialType: [],
+                    orderBy: 'latest',
+                    paging: { pageNo: 1, pageSize: 30 }
+                })
+            })
+
+            const allResponse: Response = await this.requestManager.schedule(allRequest, 1)
+            const allData = typeof allResponse.data === 'string' ? JSON.parse(allResponse.data) : allResponse.data
+            const allTiles = NekoPostParser.parseProjectTiles(allData.listProject)
+            if (allTiles.length > 0) {
+                allMangaSection.items = allTiles
+                sectionCallback(allMangaSection)
+            }
+        } catch (e) {
+            console.log('Error loading all manga sections:', e)
+        }
     }
 
     /**
@@ -200,15 +239,68 @@ export class NekoPost extends Source {
         const page = metadata?.page ?? 1
 
         if (homepageSectionId === 'popular') {
+            if (page === 1) {
+                const request: Request = App.createRequest({
+                    url: `${NEKOPOST_API_DOMAIN}/project/list/popular`,
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json'
+                    },
+                    data: JSON.stringify({
+                        type: 'm',
+                        paging: { pageNo: 1, pageSize: 20 }
+                    })
+                })
+
+                const response: Response = await this.requestManager.schedule(request, 1)
+                const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+                const items = NekoPostParser.parseProjectTiles(data.listProject)
+
+                return App.createPagedResults({
+                    results: items,
+                    metadata: { page: 2 }
+                })
+            } else {
+                // For page 2+, paginate via catalog search
+                const request: Request = App.createRequest({
+                    url: `${NEKOPOST_API_DOMAIN}/project/search`,
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json'
+                    },
+                    data: JSON.stringify({
+                        keyword: '',
+                        genre: [],
+                        status: 0,
+                        specialType: [],
+                        orderBy: 'latest',
+                        paging: { pageNo: page, pageSize: 30 }
+                    })
+                })
+
+                const response: Response = await this.requestManager.schedule(request, 1)
+                const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+                const items = NekoPostParser.parseProjectTiles(data.listProject)
+
+                return App.createPagedResults({
+                    results: items,
+                    metadata: (data?.listProject?.length >= 30) ? { page: page + 1 } : undefined
+                })
+            }
+        } else if (homepageSectionId === 'all') {
             const request: Request = App.createRequest({
-                url: `${NEKOPOST_API_DOMAIN}/project/list/popular`,
+                url: `${NEKOPOST_API_DOMAIN}/project/search`,
                 method: 'POST',
                 headers: {
                     'content-type': 'application/json'
                 },
                 data: JSON.stringify({
-                    type: 'm',
-                    paging: { pageNo: page, pageSize: 20 }
+                    keyword: '',
+                    genre: [],
+                    status: 0,
+                    specialType: [],
+                    orderBy: 'latest',
+                    paging: { pageNo: page, pageSize: 30 }
                 })
             })
 
@@ -218,9 +310,10 @@ export class NekoPost extends Source {
 
             return App.createPagedResults({
                 results: items,
-                metadata: items.length >= 20 ? { page: page + 1 } : undefined
+                metadata: (data?.listProject?.length >= 30) ? { page: page + 1 } : undefined
             })
         } else {
+            // Latest Updates
             const request: Request = App.createRequest({
                 url: `${NEKOPOST_API_DOMAIN}/project/latest`,
                 method: 'POST',
@@ -229,7 +322,7 @@ export class NekoPost extends Source {
                 },
                 data: JSON.stringify({
                     type: 'm',
-                    paging: { pageNo: page, pageSize: 20 }
+                    paging: { pageNo: page, pageSize: 50 }
                 })
             })
 
@@ -239,7 +332,7 @@ export class NekoPost extends Source {
 
             return App.createPagedResults({
                 results: items,
-                metadata: items.length >= 20 ? { page: page + 1 } : undefined
+                metadata: (data?.listChapter?.length >= 20) ? { page: page + 1 } : undefined
             })
         }
     }
@@ -262,7 +355,7 @@ export class NekoPost extends Source {
                 status: 0,
                 specialType: [],
                 orderBy: 'latest',
-                paging: { pageNo: page, pageSize: 20 }
+                paging: { pageNo: page, pageSize: 30 }
             })
         })
 
@@ -272,7 +365,7 @@ export class NekoPost extends Source {
 
         return App.createPagedResults({
             results: items,
-            metadata: items.length >= 20 ? { page: page + 1 } : undefined
+            metadata: (data?.listProject?.length >= 30) ? { page: page + 1 } : undefined
         })
     }
 }

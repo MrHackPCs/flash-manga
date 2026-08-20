@@ -1,4 +1,4 @@
-export const FLASH_MANGA_DOMAIN = 'https://www.flash-manga.net'
+export const SNAP_MANGA_DOMAIN = 'https://www.snap-manga.com'
 
 /**
  * Thai month name mapping to Gregorian month numbers (0-indexed)
@@ -91,6 +91,6 @@ export function parseChapterNumber(text: string): number {
 export function cleanUrl(url: string): string {
     if (!url) return ''
     if (url.startsWith('//')) return `https:${url}`
-    if (url.startsWith('/')) return `${FLASH_MANGA_DOMAIN}${url}`
+    if (url.startsWith('/')) return `${SNAP_MANGA_DOMAIN}${url}`
     return url
 }
